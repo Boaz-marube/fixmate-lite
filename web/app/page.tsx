@@ -1,5 +1,6 @@
 "use client"
 
+import CTA from "./components/landing/cta"
 import { HeroSection } from "./components/landing/heroSection"
 import { ServiceGrid } from "./components/landing/serviceSection"
 import { Testimonials } from "./components/landing/testimonialSection"
@@ -16,6 +17,7 @@ export default function HomePage() {
       <ServiceGrid/>
       <Values/>
       <Testimonials/>
+      <CTA/>
       <Footer/>
     </>
   )
