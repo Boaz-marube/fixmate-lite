@@ -8,6 +8,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 // import { AuthenticatedRequest } from '../types/auth.types';
 import { AuthService } from './auth.service';
@@ -21,22 +22,26 @@ import { ResetPasswordDTO } from './dtos/reset-password.dto';
 import { GoogleAuthGuard } from './guards/google-auth.guards';
 import { FixerSignupDto } from './dtos/fixerSignup.dto';
 import { UpdateProfileDto } from './dtos/update-profile.dto';
+import { VerifyResetCodeDto } from './dtos/verify-reset-code.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('customer-signup')
+  @Throttle({ short: { limit: 2, ttl: 1000 } }) // 2 signups per second
   async customerSignup(@Body() signupData: CustomerSignupDto) {
     return this.authService.customerSignup(signupData);
   }
 
   @Post('fixer-signup')
+  @Throttle({ short: { limit: 2, ttl: 1000 } }) // 2 signups per second
   async fixerSignup(@Body() signupData: FixerSignupDto) {
     return this.authService.fixerSignup(signupData);
   }
 
   @Post('login')
+  @Throttle({ short: { limit: 5, ttl: 60000 } }) // 5 login attempts per minute
   async login(@Body() credentials: LoginDTO) {
     return this.authService.login(credentials);
   }
@@ -56,13 +61,18 @@ export class AuthController {
   }
 
   @Post('forgot-password')
+  @Throttle({ short: { limit: 3, ttl: 300000 } }) // 3 requests per 5 minutes
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDTO) {
     return this.authService.forgotPassword(forgotPasswordDto.email);
   }
-  //TODO: @Post('verify-reset-code')
-
+  @Post('verify-reset-code')
+  @Throttle({ short: { limit: 5, ttl: 300000 } }) // 5 attempts per 5 minutes
+  async verifyResetCode(@Body() verifyCodeDto: VerifyResetCodeDto) {
+    return this.authService.verifyResetCode(verifyCodeDto.email, verifyCodeDto.code);
+  }
 
   @Put('reset-password')
+  @Throttle({ short: { limit: 5, ttl: 300000 } }) // 5 attempts per 5 minutes
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDTO) {
     return this.authService.resetPassword(
       resetPasswordDto.newPassword,
