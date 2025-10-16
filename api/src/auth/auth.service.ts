@@ -17,6 +17,14 @@ import { ResetToken } from './schema/reset-token.schema';
 import { MailService } from 'src/services/mail.service';
 import { FixerSignupDto } from './dtos/fixerSignup.dto';
 import { UpdateProfileDto } from './dtos/update-profile.dto';
+import { Types } from 'mongoose';
+import {
+  CreateUserData,
+  TokenResponse,
+  CreateUserResponse,
+  VerifyResetCodeResponse,
+  MessageResponse,
+} from './types/auth-response.types';
 
 @Injectable()
 export class AuthService {
@@ -74,7 +82,7 @@ export class AuthService {
     return this.createUser(userData, 'Fixer account created successfully');
   }
 
-  private async createUser(userData: any, successMessage: string) {
+  private async createUser(userData: CreateUserData, successMessage: string): Promise<CreateUserResponse> {
     try {
       const hashedPassword = await bcrypt.hash(userData.password, 10);
       const user = await this.UserModel.create({
@@ -84,7 +92,7 @@ export class AuthService {
       
       return {
         message: successMessage,
-        userId: user._id,
+        userId: user._id.toString(),
       };
     } catch (error) {
       if (error.code === 11000) {
@@ -137,7 +145,7 @@ export class AuthService {
     return this.generateUserTokens(token.userId);
   }
 
-  async generateUserTokens(userId) {
+  async generateUserTokens(userId: Types.ObjectId): Promise<TokenResponse> {
     const accessToken = this.jwtService.sign({ userId }, { expiresIn: '1h' });
     const { v4: uuidv4 } = await import('uuid');
     const refreshToken = uuidv4();
@@ -145,7 +153,7 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  async storeRefreshToken(token: string, userId) {
+  async storeRefreshToken(token: string, userId: Types.ObjectId): Promise<void> {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 2);
     await this.RefreshTokenModel.updateOne(
@@ -260,7 +268,7 @@ export class AuthService {
     return userWithoutPassword;
   }
 
-  async googleLogin(googleUser: any) {
+  async googleLogin(googleUser: { email: string; firstName?: string; lastName?: string }) {
     const { email, firstName, lastName } = googleUser;
 
     // Ensure names are strings, not undefined
@@ -301,41 +309,54 @@ export class AuthService {
     };
   }
 
-  async verifyResetCode(email: string, code: string){
+  async verifyResetCode(email: string, code: string): Promise<VerifyResetCodeResponse> {
     const user = await this.UserModel.findOne({ email });
     if (!user) {
       throw new BadRequestException('User not found');
     }
+    
     const token = await this.ResetTokenModel.findOneAndDelete({
       token: code,
       userId: user._id,
       expiresAt: { $gt: new Date() },
     });
+    
     if (!token) {
       throw new UnauthorizedException('Invalid or expired code');
     }
+    
+    // Generate new reset token for password reset
     const resetToken = nanoid(64);
     const expiryDate = new Date();
     expiryDate.setMinutes(expiryDate.getMinutes() + 10);
-    token.token= resetToken;
-    token.expiresAt= expiryDate;
-    await token.save();
+    
+    await this.ResetTokenModel.create({
+      token: resetToken,
+      userId: user._id,
+      expiresAt: expiryDate,
+    });
 
-    return {token: resetToken, message: 'Code verified successfully'}
+    return {
+      token: resetToken,
+      message: 'Code verified successfully'
+    };
   }
 
-  async resetPasswordWithToken(newPassword: string, resetToken: string) {
+  async resetPasswordWithToken(newPassword: string, resetToken: string): Promise<MessageResponse> {
     const token = await this.ResetTokenModel.findOneAndDelete({
       token: resetToken,
       expiresAt: { $gte: new Date() },
     });
+    
     if (!token) {
       throw new UnauthorizedException('Invalid or expired reset token');
     }
+    
     const user = await this.UserModel.findById(token.userId);
     if (!user) {
       throw new BadRequestException('User not found');
     }
+    
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedPassword;
     await user.save();
