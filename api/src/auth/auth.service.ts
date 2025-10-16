@@ -70,7 +70,7 @@ export class AuthService {
       password: hashedPassword,
       name,
       phoneNumber,
-      address: serviceArea, // Use serviceArea as address for fixers
+      address: serviceArea, 
       skills,
       experienceYears,
       serviceArea,
@@ -159,12 +159,19 @@ export class AuthService {
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + 1);
       const resetToken = nanoid(64);
+      await this.ResetTokenModel.deleteMany({ userId: user._id });
       await this.ResetTokenModel.create({
         token: resetToken,
         userId: user._id,
         expiresAt,
       });
-      this.mailService.sendPasswordResetEmail(email, resetToken);
+
+      try{
+        this.mailService.sendPasswordResetEmail(email, resetToken);
+      }catch(error){
+        console.error('Error sending email:', error);
+    
+      }
     }
     return { message: 'If this user exists, they will receive an email' };
   }
@@ -262,5 +269,47 @@ export class AuthService {
         userType: user.userType,
       },
     };
+  }
+
+  async verifyResetCode(email: string, code: string){
+    const user = await this.UserModel.findOne({ email });
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+    const token = await this.ResetTokenModel.findOneAndDelete({
+      token: code,
+      userId: user._id,
+      expiresAt: { $gt: new Date() },
+    });
+    if (!token) {
+      throw new UnauthorizedException('Invalid or expired code');
+    }
+    const resetToken = nanoid(64);
+    const expiryDate = new Date();
+    expiryDate.setMinutes(expiryDate.getMinutes() + 10);
+    token.token= resetToken;
+    token.expiresAt= expiryDate;
+    await token.save();
+
+    return {token: resetToken, message: 'Code verified successfully'}
+  }
+
+  async resetPasswordWithToken(newPassword: string, resetToken: string) {
+    const token = await this.ResetTokenModel.findOneAndDelete({
+      token: resetToken,
+      expiresAt: { $gte: new Date() },
+    });
+    if (!token) {
+      throw new UnauthorizedException('Invalid reset token');
+    }
+    const user = await this.UserModel.findById(token.userId);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    await user.save();
+
+    return { message: 'Password reset successfully' };
   }
 }
