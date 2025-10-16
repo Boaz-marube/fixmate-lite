@@ -9,20 +9,20 @@ import Image from "next/image"
 export function Testimonials() {
   const testimonials = [
     {
-      name: "Sarah Wanjiku",
-      image: "/professional-woman-smiling.png",
+      name: "Boaz Palmer",
+      image: "/boaz.jpeg",
       text: "FixMate saved my day! My plumber arrived within 30 minutes and fixed my burst pipe professionally. Highly recommended!",
       rating: 5,
     },
     {
       name: "James Mwangi",
-      image: "/professional-man-smiling.png",
+      image: "/brian.jpeg",
       text: "The electrician was knowledgeable and fixed my wiring issues quickly. Great service and fair pricing.",
       rating: 5,
     },
     {
       name: "Grace Akinyi",
-      image: "/professional-woman-smiling.png",
+      image: "/evelyne.png",
       text: "Excellent carpenter service! They built custom shelves exactly as I wanted. Will definitely use FixMate again.",
       rating: 5,
     },
