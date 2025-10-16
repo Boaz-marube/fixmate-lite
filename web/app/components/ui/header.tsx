@@ -29,9 +29,6 @@ export function Header() {
                   className="w-full h-full object-cover rounded-full bg-none"
                 />
               </div>
-              <span className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white font-[Poppins]">
-                
-              </span>
             </Link>
           </div>
 
@@ -50,7 +47,7 @@ export function Header() {
               About
             </a>
             <a 
-              href="/doctors" 
+              href="/fixers" 
               className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 transition-colors duration-200"
             >
              Fixers
