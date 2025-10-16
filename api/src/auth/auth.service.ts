@@ -31,20 +31,17 @@ export class AuthService {
 
   async customerSignup(signupData: CustomerSignupDto) {
     const { email, password, name, phoneNumber, address } = signupData;
-    const existingUser = await this.UserModel.findOne({ email });
-    if (existingUser) {
-      throw new BadRequestException('User already exists');
-    }
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    await this.UserModel.create({
+    
+    const userData = {
       email,
-      password: hashedPassword,
+      password,
       name,
       phoneNumber,
       address: address || 'Not provided',
-      userType: 'customer',
-    });
+      userType: 'customer' as const,
+    };
+    
+    return this.createUser(userData, 'Customer account created successfully');
   }
 
   async fixerSignup(signupData: FixerSignupDto) {
@@ -59,32 +56,54 @@ export class AuthService {
       nationalId,
       description,
     } = signupData;
-    const existingUser = await this.UserModel.findOne({ email });
-    if (existingUser) {
-      throw new BadRequestException('User already exists');
-    }
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    await this.UserModel.create({
+    
+    const userData = {
       email,
-      password: hashedPassword,
+      password,
       name,
       phoneNumber,
-      address: serviceArea, 
+      address: serviceArea || 'Not provided',
       skills,
       experienceYears,
       serviceArea,
       nationalId,
       description,
-      userType: 'fixer',
-    });
+      userType: 'fixer' as const,
+    };
+    
+    return this.createUser(userData, 'Fixer account created successfully');
+  }
+
+  private async createUser(userData: any, successMessage: string) {
+    try {
+      const hashedPassword = await bcrypt.hash(userData.password, 10);
+      const user = await this.UserModel.create({
+        ...userData,
+        password: hashedPassword,
+      });
+      
+      return {
+        message: successMessage,
+        userId: user._id,
+      };
+    } catch (error) {
+      if (error.code === 11000) {
+        throw new BadRequestException('User with this email already exists');
+      }
+      
+      if (error.name === 'ValidationError') {
+        const messages = Object.values(error.errors).map((err: any) => err.message);
+        throw new BadRequestException(`Validation failed: ${messages.join(', ')}`);
+      }
+      throw new BadRequestException('Failed to create account');
+    }
   }
 
   async login(credentials: LoginDTO) {
     const { email, password } = credentials;
     const user = await this.UserModel.findOne({ email });
     if (!user) {
-      throw new BadRequestException('Invalid credentials');
+      throw new UnauthorizedException('Invalid credentials');
     }
 
     const passwordMatch = await bcrypt.compare(password, user.password);
@@ -146,11 +165,15 @@ export class AuthService {
     }
     const passwordMatch = await bcrypt.compare(oldPassword, user.password);
     if (!passwordMatch) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Current password is incorrect');
     }
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedPassword;
     await user.save();
+    
+    return {
+      message: 'Password changed successfully',
+    };
   }
 
   async forgotPassword(email: string) {
@@ -166,11 +189,12 @@ export class AuthService {
         expiresAt,
       });
 
-      try{
-        this.mailService.sendPasswordResetEmail(email, resetToken);
-      }catch(error){
-        console.error('Error sending email:', error);
-    
+      try {
+        await this.mailService.sendPasswordResetEmail(email, resetToken);
+      } catch (error) {
+        console.error('Error sending password reset email:', error);
+        // Don't throw error to prevent email enumeration attacks
+        // Still return success message
       }
     }
     return { message: 'If this user exists, they will receive an email' };
@@ -178,6 +202,9 @@ export class AuthService {
 
   async logout(refreshToken: string) {
     await this.RefreshTokenModel.deleteOne({ token: refreshToken });
+    return {
+      message: 'Logged out successfully',
+    };
   }
 
   async resetPassword(newPassword: string, resetToken: string) {
@@ -186,7 +213,7 @@ export class AuthService {
       expiresAt: { $gt: new Date() },
     });
     if (!token) {
-      throw new UnauthorizedException('Invalid reset token');
+      throw new UnauthorizedException('Invalid or expired reset token');
     }
     const user = await this.UserModel.findById(token.userId);
     if (!user) {
@@ -195,7 +222,10 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedPassword;
     await user.save();
-    // await this.ResetTokenModel.deleteOne({token: resetToken});
+    
+    return {
+      message: 'Password reset successfully',
+    };
   }
 
   async getProfile(userId: string) {
@@ -300,7 +330,7 @@ export class AuthService {
       expiresAt: { $gte: new Date() },
     });
     if (!token) {
-      throw new UnauthorizedException('Invalid reset token');
+      throw new UnauthorizedException('Invalid or expired reset token');
     }
     const user = await this.UserModel.findById(token.userId);
     if (!user) {

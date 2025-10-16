@@ -26,6 +26,22 @@ export class User extends Document {
 
   @Prop({ required: false, type: SchemaTypes.ObjectId })
   roleId: Types.ObjectId;
+
+  // Fixer-specific fields
+  @Prop({ required: false, type: [String] })
+  skills: string[];
+
+  @Prop({ required: false })
+  experienceYears: number;
+
+  @Prop({ required: false })
+  serviceArea: string;
+
+  @Prop({ required: false })
+  nationalId: string;
+
+  @Prop({ required: false })
+  description: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
