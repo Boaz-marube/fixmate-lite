@@ -11,15 +11,14 @@ const envSchema = z.object({
   SERVER_ROUNDS: z.string().default("10").transform(Number),
   JWT_SECRET: z.string().min(1, "JWT_SECRET is required"),
   JWT_EXPIRES_IN: z.string().default('7d'),
+  MONGO_URI: z.string().min(1, "MONGO_URL is required"),
 });
 
 const env = envSchema.parse(process.env);
 
-const MONGO_URL = `mongodb+srv://${env.MONGO_USERNAME}:${env.MONGO_PASSWORD}@cluster0.i6679dv.mongodb.net/elearningdb?retryWrites=true&w=majority&appName=Cluster0`;
-
 export const config = {
   mongo: {
-    url: MONGO_URL,
+    url: env.MONGO_URI,
   },
   server: {
     port: env.SERVER_PORT,
