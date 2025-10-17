@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import cors from "cors";
 import { config } from "./config/config";
 import { registerRoutes } from "./routes/routes";
+import { ErrorMiddleware } from "./middleware/errorMiddleware";
 
 const PORT = Number(process.env.PORT) || config.server.port
 const app: Express = express();
@@ -23,6 +24,7 @@ app.use(cors({
     console.log("✅ Connection to MongoDB successful");
 
     registerRoutes(app);
+    app.use(ErrorMiddleware)
 
     app.listen(PORT, () => {
       console.log(`Server listening on port ${PORT}`);
