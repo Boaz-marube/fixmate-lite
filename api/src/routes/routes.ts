@@ -2,6 +2,7 @@ import { Express } from "express";
 import authRoutes from './authRoutes';
 import userRoutes from './userRoutes';
 import serviceRoutes from './serviceRoutes';
+import bookingRoutes from './bookingRoutes';
 
 export const registerRoutes = (app: Express) : void => {
   // Health check
@@ -17,4 +18,5 @@ export const registerRoutes = (app: Express) : void => {
   app.use('/api/auth', authRoutes);
   app.use('/api/users', userRoutes);
   app.use('/api/services', serviceRoutes);
+  app.use('/api/bookings', bookingRoutes);
 }
