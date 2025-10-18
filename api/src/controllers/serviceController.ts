@@ -31,6 +31,12 @@ export const createService = async (
       return next(new ErrorHandler('Only fixers can create services', 403));
     }
 
+    // Validate fixer exists and is active
+    const fixer = await UserModel.findById(req.user._id);
+    if (!fixer || !fixer.isActive || fixer.role !== UserRole.FIXER) {
+      return next(new ErrorHandler('Invalid fixer account', 403));
+    }
+
     const service = await ServiceModel.create({
       ...req.body,
       fixerId: req.user._id
@@ -52,24 +58,68 @@ export const getServices = async (
   next: NextFunction
 ) => {
   try {
-    const { category, fixerId, page = 1, limit = 10 } = req.query;
+    const { 
+      category, 
+      fixerId, 
+      minPrice, 
+      maxPrice, 
+      minRating,
+      search,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      page = 1, 
+      limit = 10 
+    } = req.query;
     
     const filter: any = { isActive: true };
+    
+    // Category filter
     if (category) filter.category = category;
+    
+    // Fixer filter
     if (fixerId) filter.fixerId = fixerId;
+    
+    // Price range filter
+    if (minPrice || maxPrice) {
+      filter.price = {};
+      if (minPrice) filter.price.$gte = Number(minPrice);
+      if (maxPrice) filter.price.$lte = Number(maxPrice);
+    }
+    
+    // Text search filter
+    if (search) {
+      filter.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ];
+    }
 
-    const services = await ServiceModel.find(filter)
-      .populate('fixerId', 'name email rating')
+    // Build sort object
+    const sort: any = {};
+    sort[sortBy as string] = sortOrder === 'asc' ? 1 : -1;
+
+    let query = ServiceModel.find(filter)
+      .populate('fixerId', 'name email rating totalJobs isAvailable')
       .limit(Number(limit))
       .skip((Number(page) - 1) * Number(limit))
-      .sort({ createdAt: -1 });
+      .sort(sort);
+
+    const services = await query;
+    
+    // Filter by fixer rating if specified
+    let filteredServices = services;
+    if (minRating) {
+      filteredServices = services.filter(service => 
+        (service.fixerId as any).rating >= Number(minRating)
+      );
+    }
 
     const total = await ServiceModel.countDocuments(filter);
 
     res.json({
       success: true,
       message: 'Services retrieved successfully',
-      services,
+      services: filteredServices,
       total
     });
   } catch (error) {
@@ -177,6 +227,22 @@ export const getMyServices = async (
       success: true,
       message: 'Your services retrieved successfully',
       services
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getCategories = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    res.json({
+      success: true,
+      message: 'Categories retrieved successfully',
+      categories: ['plumbing', 'electrical', 'carpentry', 'painting', 'cleaning', 'appliance-repair', 'other']
     });
   } catch (error) {
     next(error);

@@ -8,11 +8,16 @@ interface UpdateProfileRequest {
   name?: string;
   phoneNumber?: string;
   address?: string;
+  // Fixer-specific fields
   skills?: string[];
-  portfolio?: string[];
-  certifications?: string[];
+  experienceYears?: number;
+  serviceArea?: string;
+  description?: string;
   hourlyRate?: number;
-  availability?: boolean;
+  isAvailable?: boolean;
+  portfolio?: Array<{images: string[], description: string}>;
+  certifications?: Array<{name: string, issuedBy: string, issuedDate: Date}>;
+  availability?: Array<{dayOfWeek: number, startTime: string, endTime: string}>;
 }
 
 interface UserResponse {
@@ -46,13 +51,17 @@ export const getProfile = async (
         isVerified: user.isVerified,
         isActive: user.isActive,
         ...(user.role === UserRole.FIXER && {
-          skills: (user as any).skills,
-          portfolio: (user as any).portfolio,
-          certifications: (user as any).certifications,
-          hourlyRate: (user as any).hourlyRate,
-          availability: (user as any).availability,
-          rating: (user as any).rating,
-          completedJobs: (user as any).completedJobs
+          skills: (user as any).skills || [],
+          experienceYears: (user as any).experienceYears || 0,
+          serviceArea: (user as any).serviceArea || '',
+          description: (user as any).description || '',
+          rating: (user as any).rating || 0,
+          totalJobs: (user as any).totalJobs || 0,
+          isAvailable: (user as any).isAvailable ?? true,
+          hourlyRate: (user as any).hourlyRate || 0,
+          portfolio: (user as any).portfolio || [],
+          certifications: (user as any).certifications || [],
+          availability: (user as any).availability || []
         })
       }
     });
@@ -88,12 +97,20 @@ export const updateProfile = async (
         phoneNumber: user.phoneNumber,
         address: user.address,
         role: user.role,
+        isVerified: user.isVerified,
+        isActive: user.isActive,
         ...(user.role === UserRole.FIXER && {
-          skills: (user as any).skills,
-          portfolio: (user as any).portfolio,
-          certifications: (user as any).certifications,
-          hourlyRate: (user as any).hourlyRate,
-          availability: (user as any).availability
+          skills: (user as any).skills || [],
+          experienceYears: (user as any).experienceYears || 0,
+          serviceArea: (user as any).serviceArea || '',
+          description: (user as any).description || '',
+          rating: (user as any).rating || 0,
+          totalJobs: (user as any).totalJobs || 0,
+          isAvailable: (user as any).isAvailable ?? true,
+          hourlyRate: (user as any).hourlyRate || 0,
+          portfolio: (user as any).portfolio || [],
+          certifications: (user as any).certifications || [],
+          availability: (user as any).availability || []
         })
       }
     });

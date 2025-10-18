@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5002';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8091';
 
 class ApiService {
   private async request(endpoint: string, options: RequestInit = {}) {
@@ -24,14 +24,15 @@ class ApiService {
       }
 
       const response = await fetch(url, config);
+      const data = await response.json();
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API Error Response:', errorText);
-        throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
+      // Backend returns success field, check that instead of HTTP status
+      if (!data.success) {
+        console.error('API Error Response:', data.message);
+        throw new Error(data.message || `Request failed: ${response.status}`);
       }
 
-      return response.json();
+      return data;
     } catch (error) {
       throw error;
     }

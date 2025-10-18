@@ -32,7 +32,8 @@ interface FixListItem {
 class CustomerService {
   async getProfile(customerId: string): Promise<CustomerProfile | null> {
     try {
-      return await apiClient.get<CustomerProfile>('/auth/profile');
+      const response = await apiClient.get<any>('/api/users/profile');
+      return response.user;
     } catch (error) {
       console.error('Failed to fetch customer profile:', error);
       return null;
@@ -41,7 +42,8 @@ class CustomerService {
 
   async updateProfile(customerId: string, data: Partial<CustomerProfile>): Promise<CustomerProfile | null> {
     try {
-      return await apiClient.put<CustomerProfile>('/auth/profile', data);
+      const response = await apiClient.put<any>('/api/users/profile', data);
+      return response.user;
     } catch (error) {
       console.error('Failed to update customer profile:', error);
       return null;
@@ -50,7 +52,8 @@ class CustomerService {
 
   async getBookings(customerId: string): Promise<Booking[]> {
     try {
-      return await apiClient.get<Booking[]>(`/bookings/customer/${customerId}`);
+      const response = await apiClient.get<any>('/api/bookings');
+      return response.bookings || [];
     } catch (error) {
       console.error('Failed to fetch customer bookings:', error);
       return [];
@@ -59,7 +62,8 @@ class CustomerService {
 
   async createBooking(bookingData: Omit<Booking, 'id'>): Promise<Booking | null> {
     try {
-      return await apiClient.post<Booking>('/bookings', bookingData);
+      const response = await apiClient.post<any>('/api/bookings', bookingData);
+      return response.booking;
     } catch (error) {
       console.error('Failed to create booking:', error);
       return null;
@@ -68,7 +72,7 @@ class CustomerService {
 
   async cancelBooking(bookingId: string): Promise<boolean> {
     try {
-      await apiClient.patch(`/bookings/${bookingId}`, { status: 'cancelled' });
+      await apiClient.put(`/api/bookings/${bookingId}/cancel`, {});
       return true;
     } catch (error) {
       console.error('Failed to cancel booking:', error);

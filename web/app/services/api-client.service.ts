@@ -1,5 +1,5 @@
 class ApiClientService {
-    private baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5002'
+    private baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8091'
     private retryAttempts = 3
     private retryDelay = 1000 // 1 second
   
@@ -21,13 +21,16 @@ class ApiClientService {
           headers,
         })
   
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        const data = await response.json()
+        
+        // Backend returns success field, check that instead of HTTP status
+        if (!data.success) {
+          throw new Error(data.message || `Request failed: ${response.status}`)
         }
   
-        return await response.json()
+        return data
       } catch (error) {
-        if (attempt < this.retryAttempts) {
+        if (attempt < this.retryAttempts && error instanceof TypeError) {
           await this.delay(this.retryDelay * attempt)
           return this.makeRequest(url, options, attempt + 1)
         }

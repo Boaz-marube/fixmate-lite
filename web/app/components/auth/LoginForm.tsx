@@ -40,7 +40,7 @@ export function LoginForm() {
     setError("");
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005'}/auth/login`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8091'}/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -53,20 +53,21 @@ export function LoginForm() {
 
       const data = await response.json();
 
-      if (response.ok) {
-        // Use auth context to handle login with full user data
+      if (data.success) {
+        // Map backend response to frontend user format
         const user = {
-          id: data.user.id,
+          id: data.user._id,
           name: data.user.name,
           email: data.user.email,
-          userType: data.user.userType || 'customer',
+          userType: data.user.role, // Backend uses 'role', frontend uses 'userType'
         };
 
-        login(data.accessToken, data.refreshToken, user);
+        // Backend returns single 'token', not separate access/refresh tokens
+        login(data.token, '', user);
         
-        // Redirect based on user type
-        const redirectPath = user.userType === 'admin' ? '/admin' : user.userType === 'fixer' ? '/fixer' : '/customer';
-        router.push(redirectPath);
+        // Redirect based on user role
+        const redirectPath = data.user.role === 'fixer' ? '/fixer' : '/customer';
+        router.push(redirectPath as any);
       } else {
         setError(data.message || "Login failed. Please try again.");
       }
@@ -130,7 +131,7 @@ export function LoginForm() {
           </div>
           <div className="mt-2 text-right">
             <Link
-              href="/forgot-password"
+              href= "/forgot-password"
               className="text-sm text-orange-400 hover:underline"
             >
               Forgot Password?

@@ -5,7 +5,8 @@ import {
   getServiceById, 
   updateService, 
   deleteService, 
-  getMyServices 
+  getMyServices,
+  getCategories 
 } from '../controllers/serviceController';
 import { authMiddleware } from '../middleware/authMiddleware';
 
@@ -13,12 +14,15 @@ const router = Router();
 
 // Public routes
 router.get('/', getServices);
-router.get('/:id', getServiceById);
+router.get('/categories', getCategories);
 
-// Protected routes
+// Protected routes - specific routes before parameterized routes
+router.get('/my/services', authMiddleware, getMyServices);
 router.post('/', authMiddleware, createService);
 router.put('/:id', authMiddleware, updateService);
 router.delete('/:id', authMiddleware, deleteService);
-router.get('/my/services', authMiddleware, getMyServices);
+
+// Public parameterized routes (must be last)
+router.get('/:id', getServiceById);
 
 export default router;
