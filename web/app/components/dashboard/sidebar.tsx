@@ -22,17 +22,17 @@ import {
     SettingsIcon,
     Book,
   } from "lucide-react"
-import { formatAdminName, formatCustomerName, formatFixerName } from "@/lib/name-utils"
+import { formatCustomerName, formatFixerName } from "@/lib/name-utils"
 
 
 interface User {
     id: string
     name: string
     email: string
-    userType: 'customer' | 'fixer' | 'admin'
+    userType: 'customer' | 'fixer'
 }
 interface SidebarProps {
-userType?: 'customer' | 'fixer' | 'admin'
+userType?: 'customer' | 'fixer'
 isOpen?: boolean
 onToggle?: () => void
 }
@@ -41,7 +41,7 @@ export function Sidebar({userType}: SidebarProps){
 const [user, setUser] = useState<User | null>(null);
 const [customerProfile, setCustomerProfile] = useState<any>(null)
 const [fixerProfile, setFixerProfile] = useState<any>(null)
-const [adminProfile, setAdminProfile] = useState<any>(null)
+
 const router = useRouter()
 const pathname = usePathname()
 
@@ -56,7 +56,7 @@ useEffect(()=>{
             fetchFixerProfile(parsedUser.id)
             } else if (parsedUser.userType === 'customer') {
             fetchCustomerProfile(parsedUser.id)
-            } 
+            }
         } catch (error) {
             console.error('Failed to parse user data:', error)
         }
@@ -85,33 +85,19 @@ const getMenuItems = () => {
     switch (userType) {
         case 'customer':
             return [
-                { id:'home' ,label: 'Home',icon:Home , path: '/customer' },
-                { id:'book' ,label: 'Book Fixer',icon: Book, path: '/customer/book-fixer' },
+                { id:'home' ,label: 'Dashboard',icon:Home , path: '/customer' },
+                { id:'services' ,label: 'Browse Services',icon: Wrench, path: '/customer/services' },
                 { id:'bookings' ,label: 'My Bookings',icon: Calendar, path: '/customer/bookings' },
-                { id:'fixlist' ,label: 'FixList',icon: Activity, path: '/customer/fixlist' },
-                { id:'fixtips' ,label: 'FixTips',icon: Bell, path: '/customer/fixtips' },
                 { id:'profile' ,label: 'My Profile',icon: User, path: '/customer/profile' },
             ]
         case 'fixer':
             return [
-                { id:'home' ,label: 'Home',icon: Home, path: '/fixer' },
-                { id:'job-requests' ,label: 'Job Requests',icon: Activity, path: '/fixer/jobs' },
-                { id:'schedule' ,label: 'Schedule',icon: Calendar1Icon, path: '/fixer/schedule' },
-                { id:'earnings' ,label: 'Earnings',icon: DollarSign, path: '/fixer/earnings' },
-                { id:'fixtips' ,label: 'FixTips',icon: Bell, path: '/fixer/fixtips' },
-                { id:'profile' ,label: 'Profile',icon: User, path: '/fixer/profile' },
-              
+                { id:'home' ,label: 'Dashboard',icon: Home, path: '/fixer' },
+                { id:'services' ,label: 'My Services',icon: Wrench, path: '/fixer/services' },
+                { id:'bookings' ,label: 'Job Requests',icon: Calendar, path: '/fixer/bookings' },
+                { id:'profile' ,label: 'My Profile',icon: User, path: '/fixer/profile' },
             ]
-        case 'admin':
-            return [
-                { id:'home' ,label: 'Home',icon: Home, path: '/admin' },
-                { id:'manage-fixers' ,label: 'Fixer Management',icon: Wrench, path: '/admin/fixer-management' },
-                { id: 'customers' ,label: 'Customer Management',icon: User, path: '/admin/user-management' },
-                { id: 'bookings' ,label: 'Bookings',icon: Activity, path: '/admin/bookings' },
-                { id:'fixtips' ,label: 'FixTips',icon: Bell, path: '/admin/fixtips' },
-                { id:'claims' ,label: 'Claims',icon: ClipboardList, path: '/admin/claims' },
-                { id:'reports' ,label: 'Reports',icon: BarChart3, path: '/admin/reports' },
-            ]
+
         default:
             return []
     }
@@ -140,12 +126,7 @@ const getUserInfo = () => {
             return { name: fixerName, icon: Stethoscope }
           }
           return { name: formatFixerName(fixerName), icon: Stethoscope }
-        case "admin":
-          const adminName = adminProfile?.name || user?.name || 'Loading...'
-          if (adminName === 'Loading...') {
-            return { name: adminName, icon: ClipboardList }
-          }
-          return { name: formatAdminName(adminName), icon: ClipboardList }
+
         default:
           return { name: user?.name || 'Loading...', icon: User }
       }

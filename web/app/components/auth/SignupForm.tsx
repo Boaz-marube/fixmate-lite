@@ -61,9 +61,9 @@ export function SignupForm() {
     }
 
     try {
-      let endpoint = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005'}/auth/customer-signup`;
+      let endpoint = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8091'}/api/auth/customer-signup`;
       if (formData.userType === "fixer") {
-        endpoint = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005'}/auth/fixer-signup`;
+        endpoint = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8091'}/api/auth/signup`;
       } 
 
       const requestBody = {

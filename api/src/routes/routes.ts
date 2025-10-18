@@ -21,4 +21,7 @@ export const registerRoutes = (app: Express) : void => {
   app.use('/api/services', serviceRoutes);
   app.use('/api/bookings', bookingRoutes);
   app.use('/api/reviews', reviewRoutes);
+  
+  // Fixer-specific routes (alias for users)
+  app.use('/fixers', userRoutes);
 }
