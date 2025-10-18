@@ -39,7 +39,8 @@ interface FixerStats {
 class FixerService {
   async getProfile(fixerId: string): Promise<FixerProfile | null> {
     try {
-      return await apiClient.get<FixerProfile>('/auth/profile');
+      const response = await apiClient.get<any>('/api/users/profile');
+      return response.user;
     } catch (error) {
       console.error('Failed to fetch fixer profile:', error);
       return null;
@@ -48,7 +49,8 @@ class FixerService {
 
   async updateProfile(fixerId: string, data: Partial<FixerProfile>): Promise<FixerProfile | null> {
     try {
-      return await apiClient.put<FixerProfile>('/auth/profile', data);
+      const response = await apiClient.put<any>('/api/users/profile', data);
+      return response.user;
     } catch (error) {
       console.error('Failed to update fixer profile:', error);
       return null;
@@ -57,7 +59,8 @@ class FixerService {
 
   async getBookings(fixerId: string): Promise<FixerBooking[]> {
     try {
-      return await apiClient.get<FixerBooking[]>(`/bookings/fixer/${fixerId}`);
+      const response = await apiClient.get<any>('/api/bookings');
+      return response.bookings || [];
     } catch (error) {
       console.error('Failed to fetch fixer bookings:', error);
       return [];
@@ -66,7 +69,7 @@ class FixerService {
 
   async updateBookingStatus(bookingId: string, status: FixerBooking['status']): Promise<boolean> {
     try {
-      await apiClient.patch(`/bookings/${bookingId}`, { status });
+      await apiClient.put(`/api/bookings/${bookingId}/status`, { status });
       return true;
     } catch (error) {
       console.error('Failed to update booking status:', error);

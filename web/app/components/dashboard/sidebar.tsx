@@ -4,7 +4,6 @@ import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { customerService } from '../../services/customer.service'
 import { fixerService } from '../../services/fixer.service'
-import { adminService } from '../../services/admin.service'
 import Link from "next/link"
 import {
     Calendar,
@@ -24,6 +23,7 @@ import {
     Book,
   } from "lucide-react"
 import { formatAdminName, formatCustomerName, formatFixerName } from "@/lib/name-utils"
+
 
 interface User {
     id: string
@@ -52,14 +52,11 @@ useEffect(()=>{
             const parsedUser = JSON.parse(userData)
             setUser(parsedUser)
             
-            // Fetch profile based on user type
             if (parsedUser.userType === 'fixer') {
             fetchFixerProfile(parsedUser.id)
             } else if (parsedUser.userType === 'customer') {
             fetchCustomerProfile(parsedUser.id)
-            } else if (parsedUser.userType === 'admin') {
-            fetchAdminProfile(parsedUser.id)
-            }
+            } 
         } catch (error) {
             console.error('Failed to parse user data:', error)
         }
@@ -82,19 +79,7 @@ const fetchCustomerProfile = async (customerId: string) => {
     }
 }
 
-const fetchAdminProfile = async (adminId: string) => {
-    const profile = await adminService.getProfile(adminId)
-    if (profile) {
-    setAdminProfile(profile)
-    } else {
-    // Fallback: use user data from localStorage if profile not found
-    const userData = localStorage.getItem('user')
-    if (userData) {
-        const user = JSON.parse(userData)
-        setAdminProfile({ name: user.name, email: user.email })
-    }
-    }
-}
+
 
 const getMenuItems = () => {
     switch (userType) {
@@ -104,7 +89,6 @@ const getMenuItems = () => {
                 { id:'book' ,label: 'Book Fixer',icon: Book, path: '/customer/book-fixer' },
                 { id:'bookings' ,label: 'My Bookings',icon: Calendar, path: '/customer/bookings' },
                 { id:'fixlist' ,label: 'FixList',icon: Activity, path: '/customer/fixlist' },
-                { id:'fixprotect' ,label: 'FixProtect',icon: Shield, path: '/customer/fixprotect' },
                 { id:'fixtips' ,label: 'FixTips',icon: Bell, path: '/customer/fixtips' },
                 { id:'profile' ,label: 'My Profile',icon: User, path: '/customer/profile' },
             ]
@@ -114,10 +98,9 @@ const getMenuItems = () => {
                 { id:'job-requests' ,label: 'Job Requests',icon: Activity, path: '/fixer/jobs' },
                 { id:'schedule' ,label: 'Schedule',icon: Calendar1Icon, path: '/fixer/schedule' },
                 { id:'earnings' ,label: 'Earnings',icon: DollarSign, path: '/fixer/earnings' },
-                { id:'reviews' ,label: 'Reviews',icon: Star, path: '/fixer/reviews' },
                 { id:'fixtips' ,label: 'FixTips',icon: Bell, path: '/fixer/fixtips' },
                 { id:'profile' ,label: 'Profile',icon: User, path: '/fixer/profile' },
-                { id:'settings' ,label: 'Settings',icon: SettingsIcon, path: '/fixer/settings' },
+              
             ]
         case 'admin':
             return [
@@ -183,7 +166,7 @@ return(
             return (
               <Link
                 key={item.id}
-                href={item.path}
+                href={item.path as any}
                 className={`w-full flex items-center justify-start px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   isActive
                     ? "bg-orange-500 text-white"
@@ -216,7 +199,7 @@ return(
             return (
               <Link
                 key={item.id}
-                href={item.path}
+                href={item.path as any}
                 className={`flex items-center justify-center w-10 h-10 rounded-lg transition-colors ${
                   isActive
                     ? "bg-orange-500 text-white"

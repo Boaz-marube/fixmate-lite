@@ -1,4 +1,5 @@
-
+import { QuickActions } from "./components/quick-actions"
+import { RecentBookings } from "./components/recent-booking"
 
 export default function DashboardPage() {
   return (
@@ -6,7 +7,8 @@ export default function DashboardPage() {
       <div className="flex-1 flex flex-col">
         <main className="flex-1 p-6">
           <div className="space-y-8">
-           <h1>Customer Dash</h1>
+            <QuickActions />
+            <RecentBookings />
           </div>
         </main>
       </div>

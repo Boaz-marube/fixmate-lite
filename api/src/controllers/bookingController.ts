@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import BookingModel, { BookingStatus } from '../models/bookingModel';
 import ServiceModel from '../models/serviceModel';
+import UserModel from '../models/userModel';
 import ErrorHandler from '../utils/errorHandler';
 import { UserRole } from '../types/user';
 
@@ -34,7 +35,7 @@ export const createBooking = async (
 
     const { serviceId, scheduledDate, scheduledTime, customerAddress, customerPhone, notes } = req.body;
 
-    // Get service details
+    // Get service details with fixer info
     const service = await ServiceModel.findById(serviceId).populate('fixerId');
     if (!service) {
       return next(new ErrorHandler('Service not found', 404));
@@ -44,12 +45,45 @@ export const createBooking = async (
       return next(new ErrorHandler('Service is not available', 400));
     }
 
+    // Validate fixer is active and available
+    const fixer = await UserModel.findById(service.fixerId);
+    if (!fixer || !fixer.isActive) {
+      return next(new ErrorHandler('Fixer is not available', 400));
+    }
+
+    if (fixer.role !== UserRole.FIXER) {
+      return next(new ErrorHandler('Invalid service provider', 400));
+    }
+
+    // Check if fixer is available (optional business rule)
+    if (!(fixer as any).isAvailable) {
+      return next(new ErrorHandler('Fixer is currently unavailable', 400));
+    }
+
+    // Validate booking date is in the future
+    const bookingDate = new Date(scheduledDate);
+    if (bookingDate <= new Date()) {
+      return next(new ErrorHandler('Booking date must be in the future', 400));
+    }
+
+    // Check for booking conflicts (same fixer, same date/time)
+    const existingBooking = await BookingModel.findOne({
+      fixerId: service.fixerId,
+      scheduledDate: bookingDate,
+      scheduledTime,
+      status: { $in: [BookingStatus.PENDING, BookingStatus.ACCEPTED, BookingStatus.IN_PROGRESS] }
+    });
+
+    if (existingBooking) {
+      return next(new ErrorHandler('Fixer is already booked at this time', 409));
+    }
+
     // Create booking
     const booking = await BookingModel.create({
       serviceId,
       customerId: req.user._id,
       fixerId: service.fixerId,
-      scheduledDate: new Date(scheduledDate),
+      scheduledDate: bookingDate,
       scheduledTime,
       customerAddress,
       customerPhone,
@@ -181,6 +215,13 @@ export const updateBookingStatus = async (
       { new: true }
     ).populate('serviceId', 'title description price duration')
      .populate('customerId', 'name email phoneNumber');
+
+    // Update fixer stats when booking is completed
+    if (status === BookingStatus.COMPLETED) {
+      await UserModel.findByIdAndUpdate(booking.fixerId, {
+        $inc: { totalJobs: 1 }
+      });
+    }
 
     res.json({
       success: true,
