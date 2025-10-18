@@ -91,7 +91,8 @@ class FixerService {
 
   async getStats(fixerId: string): Promise<FixerStats | null> {
     try {
-      return await apiClient.get<FixerStats>(`/fixers/${fixerId}/stats`);
+      const response = await apiClient.get<any>(`/api/users/fixers/${fixerId}/stats`);
+      return response.data;
     } catch (error) {
       console.error('Failed to fetch fixer stats:', error);
       return null;

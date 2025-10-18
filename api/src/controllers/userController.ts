@@ -175,3 +175,32 @@ export const getUsersByRole = async (
     next(error);
   }
 };
+
+export const getFixerStats = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { fixerId } = req.params;
+    
+    const fixer = await UserModel.findById(fixerId);
+    if (!fixer || fixer.role !== UserRole.FIXER) {
+      return next(new ErrorHandler('Fixer not found', 404));
+    }
+
+    res.json({
+      success: true,
+      message: 'Fixer stats retrieved successfully',
+      data: {
+        totalJobs: (fixer as any).totalJobs || 0,
+        averageRating: (fixer as any).rating || 0,
+        completedJobs: (fixer as any).totalJobs || 0,
+        pendingJobs: 0,
+        totalEarnings: 0
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};

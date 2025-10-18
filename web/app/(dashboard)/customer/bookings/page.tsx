@@ -1,249 +1,208 @@
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Calendar, MapPin, Phone, Star, MessageSquare } from "lucide-react"
+"use client";
 
-export default function BookingsPage() {
-  const upcomingBookings = [
-    {
-      id: 1,
-      service: "Plumbing",
-      fixer: "James Mwangi",
-      date: "2024-01-20",
-      time: "10:00 AM",
-      location: "Westlands, Nairobi",
-      price: "KSh 2,500",
-      status: "confirmed",
-      phone: "+254 712 345 678",
-    },
-    {
-      id: 2,
-      service: "Electrical",
-      fixer: "Sarah Wanjiku",
-      date: "2024-01-22",
-      time: "2:00 PM",
-      location: "Kilimani, Nairobi",
-      price: "KSh 3,000",
-      status: "pending",
-      phone: "+254 723 456 789",
-    },
-  ]
+import { useEffect, useState } from 'react';
+import { customerService } from '@/app/services/customer.service';
+import { useAuth } from '@/app/contexts/AuthContext';
+import { Calendar, Clock, MapPin, Phone, User } from 'lucide-react';
 
-  const completedBookings = [
-    {
-      id: 3,
-      service: "Carpentry",
-      fixer: "Peter Omondi",
-      date: "2024-01-15",
-      time: "9:00 AM",
-      location: "Karen, Nairobi",
-      price: "KSh 4,500",
-      status: "completed",
-      rating: 5,
-      phone: "+254 734 567 890",
-    },
-    {
-      id: 4,
-      service: "Painting",
-      fixer: "Mary Akinyi",
-      date: "2024-01-10",
-      time: "11:00 AM",
-      location: "Lavington, Nairobi",
-      price: "KSh 5,000",
-      status: "completed",
-      rating: 4,
-      phone: "+254 745 678 901",
-    },
-  ]
+interface Booking {
+  _id: string;
+  serviceId: {
+    title: string;
+    description: string;
+    price: number;
+  };
+  fixerId: {
+    name: string;
+    email: string;
+    phoneNumber: string;
+  };
+  scheduledDate: string;
+  scheduledTime: string;
+  status: string;
+  customerAddress: string;
+  customerPhone: string;
+  totalAmount: number;
+  notes?: string;
+}
 
-  const canceledBookings = [
-    {
-      id: 5,
-      service: "Plumbing",
-      fixer: "John Kamau",
-      date: "2024-01-08",
-      time: "3:00 PM",
-      location: "Parklands, Nairobi",
-      price: "KSh 2,000",
-      status: "canceled",
-      phone: "+254 756 789 012",
-    },
-  ]
+export default function MyBookings() {
+  const { user } = useAuth();
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedStatus, setSelectedStatus] = useState<string>('');
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchBookings();
+    }
+  }, [user]);
+
+  const fetchBookings = async () => {
+    try {
+      const userBookings = await customerService.getBookings(user!.id);
+      setBookings(userBookings);
+    } catch (error) {
+      console.error('Failed to fetch bookings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "confirmed":
-        return "bg-teal-100 text-teal-700 border-teal-200"
-      case "pending":
-        return "bg-yellow-100 text-yellow-700 border-yellow-200"
-      case "completed":
-        return "bg-green-100 text-green-700 border-green-200"
-      case "canceled":
-        return "bg-red-100 text-red-700 border-red-200"
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'accepted':
+        return 'bg-blue-100 text-blue-800';
+      case 'in-progress':
+        return 'bg-purple-100 text-purple-800';
+      case 'completed':
+        return 'bg-green-100 text-green-800';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800';
       default:
-        return "bg-gray-100 text-gray-700 border-gray-200"
+        return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const handleCancelBooking = async (bookingId: string) => {
+    if (confirm('Are you sure you want to cancel this booking?')) {
+      const success = await customerService.cancelBooking(bookingId);
+      if (success) {
+        fetchBookings(); // Refresh the list
+      }
+    }
+  };
+
+  const filteredBookings = selectedStatus 
+    ? bookings.filter(booking => booking.status === selectedStatus)
+    : bookings;
+
+  if (loading) {
+    return <div className="p-6">Loading bookings...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-slate-900 rounded-lg flex">
-      <div className="flex-1 flex flex-col">
-        <main className="flex-1 p-6">
-          <div className="max-w-6xl mx-auto space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">My Bookings</h1>
-              <p className="text-muted-foreground mt-1">Manage all your service bookings</p>
-            </div>
+    <div className="p-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          My Bookings
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400">
+          Track and manage your service bookings
+        </p>
+      </div>
 
-            <Tabs defaultValue="upcoming" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 max-w-md">
-                <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-                <TabsTrigger value="completed">Completed</TabsTrigger>
-                <TabsTrigger value="canceled">Canceled</TabsTrigger>
-              </TabsList>
+      {/* Status Filter */}
+      <div className="mb-6">
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setSelectedStatus('')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              selectedStatus === ''
+                ? 'bg-orange-500 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300'
+            }`}
+          >
+            All Bookings
+          </button>
+          {['pending', 'accepted', 'in-progress', 'completed', 'cancelled'].map((status) => (
+            <button
+              key={status}
+              onClick={() => setSelectedStatus(status)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors capitalize ${
+                selectedStatus === status
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300'
+              }`}
+            >
+              {status.replace('-', ' ')}
+            </button>
+          ))}
+        </div>
+      </div>
 
-              <TabsContent value="upcoming" className="space-y-4 mt-6">
-                {upcomingBookings.map((booking) => (
-                  <Card key={booking.id} className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-4 flex-1">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <div className="flex items-center gap-3">
-                              <h3 className="text-xl font-bold text-foreground">{booking.service}</h3>
-                              <Badge className={getStatusColor(booking.status)}>{booking.status}</Badge>
-                            </div>
-                            <p className="text-muted-foreground mt-1">with {booking.fixer}</p>
-                          </div>
-                          <p className="text-xl font-bold text-primary">{booking.price}</p>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <Calendar className="h-4 w-4" />
-                            <span>
-                              {booking.date} at {booking.time}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <MapPin className="h-4 w-4" />
-                            <span>{booking.location}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <Phone className="h-4 w-4" />
-                            <span>{booking.phone}</span>
-                          </div>
-                        </div>
-
-                        <div className="flex gap-3">
-                          <Button variant="outline" size="sm">
-                            <MessageSquare className="h-4 w-4 mr-2" />
-                            Message Fixer
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            Reschedule
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-red-600 hover:text-red-700 bg-transparent"
-                          >
-                            Cancel Booking
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </TabsContent>
-
-              <TabsContent value="completed" className="space-y-4 mt-6">
-                {completedBookings.map((booking) => (
-                  <Card key={booking.id} className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-4 flex-1">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <div className="flex items-center gap-3">
-                              <h3 className="text-xl font-bold text-foreground">{booking.service}</h3>
-                              <Badge className={getStatusColor(booking.status)}>{booking.status}</Badge>
-                            </div>
-                            <p className="text-muted-foreground mt-1">with {booking.fixer}</p>
-                          </div>
-                          <p className="text-xl font-bold text-foreground">{booking.price}</p>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <Calendar className="h-4 w-4" />
-                            <span>
-                              {booking.date} at {booking.time}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <MapPin className="h-4 w-4" />
-                            <span>{booking.location}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            <span>Rated {booking.rating}/5</span>
-                          </div>
-                        </div>
-
-                        <div className="flex gap-3">
-                          <Button size="sm">Book Again</Button>
-                          <Button variant="outline" size="sm">
-                            View Receipt
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </TabsContent>
-
-              <TabsContent value="canceled" className="space-y-4 mt-6">
-                {canceledBookings.map((booking) => (
-                  <Card key={booking.id} className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-4 flex-1">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <div className="flex items-center gap-3">
-                              <h3 className="text-xl font-bold text-foreground">{booking.service}</h3>
-                              <Badge className={getStatusColor(booking.status)}>{booking.status}</Badge>
-                            </div>
-                            <p className="text-muted-foreground mt-1">with {booking.fixer}</p>
-                          </div>
-                          <p className="text-xl font-bold text-muted-foreground line-through">{booking.price}</p>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <Calendar className="h-4 w-4" />
-                            <span>
-                              {booking.date} at {booking.time}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <MapPin className="h-4 w-4" />
-                            <span>{booking.location}</span>
-                          </div>
-                        </div>
-
-                        <div className="flex gap-3">
-                          <Button size="sm">Book Again</Button>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </TabsContent>
-            </Tabs>
+      {/* Bookings List */}
+      <div className="space-y-6">
+        {filteredBookings.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500 dark:text-gray-400">
+              {selectedStatus ? `No ${selectedStatus} bookings found.` : 'No bookings yet. Start by browsing services!'}
+            </p>
           </div>
-        </main>
+        ) : (
+          filteredBookings.map((booking) => (
+            <div
+              key={booking._id}
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6"
+            >
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {booking.serviceId.title}
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">
+                    {booking.serviceId.description}
+                  </p>
+                </div>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium capitalize ${getStatusColor(booking.status)}`}>
+                  {booking.status.replace('-', ' ')}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="space-y-2">
+                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                    <User className="h-4 w-4 mr-2" />
+                    {booking.fixerId.name}
+                  </div>
+                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                    <Phone className="h-4 w-4 mr-2" />
+                    {booking.fixerId.phoneNumber}
+                  </div>
+                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                    <MapPin className="h-4 w-4 mr-2" />
+                    {booking.customerAddress}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    {new Date(booking.scheduledDate).toLocaleDateString()}
+                  </div>
+                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                    <Clock className="h-4 w-4 mr-2" />
+                    {booking.scheduledTime}
+                  </div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-white">
+                    Total: KES {booking.totalAmount.toLocaleString()}
+                  </div>
+                </div>
+              </div>
+
+              {booking.notes && (
+                <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <strong>Notes:</strong> {booking.notes}
+                  </p>
+                </div>
+              )}
+
+              {(booking.status === 'pending' || booking.status === 'accepted') && (
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => handleCancelBooking(booking._id)}
+                    className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                  >
+                    Cancel Booking
+                  </button>
+                </div>
+              )}
+            </div>
+          ))
+        )}
       </div>
     </div>
-  )
+  );
 }

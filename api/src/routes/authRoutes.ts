@@ -6,6 +6,7 @@ const router = Router();
 
 // Public routes
 router.post('/signup', signup);
+router.post('/customer-signup', signup);
 router.post('/login', login);
 router.post('/reset-password', resetPassword);
 
